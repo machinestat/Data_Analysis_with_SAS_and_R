@@ -1,0 +1,7 @@
+---
+title: "1-2 Reading Data from MySQL"
+author: "Shu Guo"
+date: "Thursday, February 12, 2015"
+output: pdf_document
+---
+
