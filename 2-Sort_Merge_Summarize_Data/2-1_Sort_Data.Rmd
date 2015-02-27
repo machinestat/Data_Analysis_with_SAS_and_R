@@ -1,0 +1,38 @@
+---
+title: "Sort Data"
+author: "Shu Guo"
+date: "Thursday, February 26, 2015"
+output: pdf_document
+---
+
+## Sort Data Using R
+Here we will talk about sorting data using three R functions: `sort()`, `order`, and `arrange()` in `dplyr` package.
+
+We can `sort()` function to sort a vector or factor into ascending or descending order.   
+`sort(x, decreasing = FALSE, na.last = NA, ...)`  
+We can set `decreasing = TRUE` to sort the object by descending order, `na.last` is used for controlling the treatment of NAs. IF TRUE, missing values in the data are put last; if FALSE, they are put first; if NA, they are removed.
+```{r}
+# sort() example
+data(mtcars)
+# sort a vector of numerical values
+sort(mtcars$mpg)
+# sort a factor variable
+sort(factor(mtcars$cyl))
+# sort the entire data set by descending order of mpg
+sort(mtcars$mpg, decreasing = TRUE, na.last = TRUE)
+```
+
+So we can order a vector now, but what if we want to order a data set using one or more of the variables in it? Here comes the function `order()`:    
+`order(..., na.last = TRUE, decreasing = FALSE)`
+
+This function returns a vector of indices which rearranges its first argument into ascending or descending order.
+
+```{r}
+# order() example
+order(mtcars$mpg)
+# sort the data set by ascending values of mpg
+head(mtcars[order(mtcars$mpg), ])
+# sort the data set by ascending order of the factor variable cyl and descending order of mpg
+head(mtcars[order(factor(mtcars$cyl), -mtcars$mpg), ], n = 15)
+
+```
