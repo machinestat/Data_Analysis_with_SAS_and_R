@@ -18,3 +18,15 @@ dbListTables(con)
 ## Run a SQL qurey
 dbGetQuery(con, "SELECT * FROM president LIMIT 5")
 ```
+
+We can use following SAS code to connect and query the database.
+```
+proc sql;    
+connect to mysql (user=root password=CloEfk93L7Vmx0z$3 server=localhost
+        database=sampdbdb port=9876);
+select *
+   from connection to mysql
+     (select * from president);
+    disconnect from mysql;
+quit;
+```
