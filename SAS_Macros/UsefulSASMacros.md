@@ -1,3 +1,8 @@
+This SAS program first read all the file names in the same folder, the files must be in the same type. Then read all the files and create a SAS data set for each file, finally use SAS to merge all the data sets to a single summary data set.
+
+In my work, I have 45 excel files in the same folder, all have one tab in the same format. I read the same tab from all excel files to SAS and then create a summary data set.
+
+
 ```
 *--------------------------------------------------------------*
 |Macro Name: Head.sas                                          |
