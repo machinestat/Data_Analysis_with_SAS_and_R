@@ -2,6 +2,65 @@ This SAS program first read all the file names in the same folder, the files mus
 
 In my work, I have 45 excel files in the same folder, all have one tab in the same format. I read the same tab from all excel files to SAS and then create a summary data set.
 
+```
+/*This SAS macro program reads all the file names in the same folder, the files must be the same type*/
+%macro GetFiles(Folder, Ext);
+	FILENAME DIRLIST PIPE %sysfunc(quote(dir "&Folder\*.&Ext")); /*Use the PIPE engine in the FILENAME statement to access the directory information. */
+	DATA dirlist ;                                               
+		INFILE dirlist LRECL = 200 TRUNCOVER;                          
+		INPUT  line $200.; 
+		length file_name $ 200; 
+		file_name="&Folder\"||scan(line,-1," ");  
+	 	IF SCAN(line, -1, ".") NOT IN ("&Ext") THEN DELETE;
+		KEEP file_name;
+	RUN; 
+%mend GetFiles;
+/*example: %GetFiles(C:\Data\Green Energy Act\2015\Target Finder, xlsx) */
+
+/*create macro variables for SAS to read the files */
+DATA Files;
+	SET Dirlist END = End_Var;
+	FileNum = 'file'||LEFT(_N_);
+	IF End_Var THEN CALL SYMPUT('MAX', _N_);
+	CALL SYMPUT(FileNum, File_Name);
+RUN;
+
+/* read all the raw data files to SAS */
+%macro ReadIn;
+%DO i = 1 %TO &MAX;
+	PROC IMPORT  OUT= file&i 
+	             		DATAFILE= "&&file&i" 
+	             		DBMS=EXCEL REPLACE;
+		RANGE="Summary$"; 
+		GETNAMES=YES;
+		MIXED=NO;
+		SCANTEXT=YES;
+		USEDATE=YES;
+		SCANTIME=YES;
+				 
+	RUN;
+%END;
+%mend ReadIn;
+%ReadIn
+
+/*merge all the SAS data sets */
+DATA Total;
+		/*first we need to take care of the same variables that 
+		has different length in each data set*/
+		LENGTH School_Board $80.;
+		FORMAT School_Board $80.;
+		INFORMAT School_Board $80.;
+		SET file1 - file%left(&MAX);
+RUN;
+
+/*Finally, delete all the data sets we don't need.*/
+PROC DATASETS LIBRARY = work NOLIST;
+	DELETE file1 - file%left(&MAX) Dirlist Files;
+RUN;
+QUIT;
+
+```
+
 
 ```
 *--------------------------------------------------------------*
