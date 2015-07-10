@@ -208,7 +208,8 @@ QUIT;
 | Purpose: Creates a new data set with all the variables in   | 
 |          the original longitudinal data set plus the        | 
 |          difference between the current value and the       |
-|          previous value for all variables in the VARLIST.   |	  | Arguments: In_Dat = Input data set name                     |
+|          previous value for all variables in the VARLIST.   |
+| Arguments: In_Dat = Input data set name                     |
 |            Out_Dat = Output data set name                   |
 |            Varlist = List of variables for differences      |
 *-------------------------------------------------------------*;
