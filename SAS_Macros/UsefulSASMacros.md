@@ -5,7 +5,8 @@ In my work, I have 45 excel files in the same folder, all have one tab in the sa
 ```
 /*This SAS macro program reads all the file names in the same folder, the files must be the same type*/
 %macro GetFiles(Folder, Ext);
-	FILENAME DIRLIST PIPE %sysfunc(quote(dir "&Folder\*.&Ext")); /*Use the PIPE engine in the FILENAME statement to access the directory information. */
+	FILENAME DIRLIST PIPE %sysfunc(quote(dir "&Folder\*.&Ext"));    
+/*Use the PIPE engine in the FILENAME statement to access the directory information. */
 	DATA dirlist ;                                               
 		INFILE dirlist LRECL = 200 TRUNCOVER;                          
 		INPUT  line $200.; 
@@ -203,14 +204,13 @@ QUIT;
 
 ```
 *-------------------------------------------------------------*
-| Macro Name: Diff_each_OBS           		              |
+| Macro Name: Diff_each_OBS                                   |
 | Purpose: Creates a new data set with all the variables in   | 
 |          the original longitudinal data set plus the        | 
 |          difference between the current value and the       |
 |          previous value for all variables in the VARLIST.   |	  | Arguments: In_Dat = Input data set name                     |
 |            Out_Dat = Output data set name                   |
 |            Varlist = List of variables for differences      |
-| Example: %Diff_Each_OBS(Clinical,NEW,HR SBP DBP)            |
 *-------------------------------------------------------------*;
 %Macro OBS_Diff(In_Dat, Out_Dat, Varlist);
 	***Create a list of variable names to hold the differences
