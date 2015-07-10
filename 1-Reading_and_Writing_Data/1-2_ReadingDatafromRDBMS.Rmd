@@ -6,6 +6,26 @@ output: pdf_document
 ---
 ## Subtract Data from Relatinal Databases
 
+## Oracle
+
+1. Access Oracle databases using SAS libref
+
+```
+# Connect the database using SAS LIBNAME
+LIBNAME Mydb oracle USER = 'Oracle username'
+                    PASSWORD = 'Oracle pw'
+                    PATH = 'Oracle-database-specification'; 
+# Import data using a SAS DATA step
+DATA MyData;
+    SET Mydb.MyData;
+RUN; 
+
+# Or use PROC COPY to import data
+PROC COPY IN = Mydb OUT = MyData;
+    SELECT MyData;
+RUN; 
+```
+
 ## RMySQL
 
 MySQL is (as of July 2013) "the world's second most widely used relational database management system (RDBMS) and most widely used open-source RDBMS". Here I will demonstrate how to access data in MySQL server using R and SAS.
@@ -80,7 +100,7 @@ Use the following code on a 64 bit Windows system and 32 bit R:
 ```{r}
 library(RODBC)
 # connect the data base
-channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=P:/System/System Overhead/Utility Data Management/05_Complete Workbooks/GEA/Schools/GEASchools.accdb")
+channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=P:/Utility Data Management/GEASchools.accdb")
 
 # get the data
 Targetdat <- sqlFetch(channel, "Target")
