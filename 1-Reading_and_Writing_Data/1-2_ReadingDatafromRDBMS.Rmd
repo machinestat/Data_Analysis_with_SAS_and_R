@@ -1,0 +1,94 @@
+---
+title: "1-2 Reading Data from MySQL"
+author: "Shu Guo"
+date: "Thursday, February 12, 2015"
+output: pdf_document
+---
+## Subtract Data from Relatinal Databases
+
+## RMySQL
+
+MySQL is (as of July 2013) "the world's second most widely used relational database management system (RDBMS) and most widely used open-source RDBMS". Here I will demonstrate how to access data in MySQL server using R and SAS.
+
+1. Using RMySQL package
+The R package **RMySQL** makes it very easy to connect MySQL databases and make the queries. 
+```{r}
+library(RMySQL)
+## Connect to a MySQL database.
+con <- dbConnect(MySQL(), user = "root", password = "CloEfk93L7Vmx0z$3",
+          dbname = "sampdb", host = "localhost")
+## List tables 
+dbListTables(con)
+
+## Run a SQL qurey
+dbGetQuery(con, "SELECT * FROM president LIMIT 5")
+```
+
+2. Using SAS
+
+We can use following SAS code to connect and query the database.
+```
+proc sql;    
+connect to mysql (user=root password=CloEfk93L7Vmx0z$3 server=localhost
+        database=sampdbdb port=9876);
+select *
+   from connection to mysql
+     (select * from president);
+    disconnect from mysql;
+quit;
+```
+
+We also can use SAS LIBNAME statement to Access data:
+```
+/*Read data from MySQL server*/
+/*use "SHOW VARIABLES WHERE Variable_name = 'port';" to find the port number*/
+LIBNAME mys mysql user=root password=CloEfk93L7Vmx0z$3 database=world
+    			server='localhost' port=3306;
+```
+
+## MS Access
+
+1. Using SAS
+
+We can use LINAME statement to connect MS Access database in SAS. After submitting the LIBNAME statement, we can see library contains all the tables in the Access database from the SAS explore window. But they are not SAS data sets and we need to use a DATA step to read the Access tables to SAS, here is the example:
+```
+* Read Access data using LIBNAME method;
+LIBNAME libAcc ACCESS "P:\Utility Data Management\Interval.accdb";
+
+*Read the data to SAS;
+DATA Weather;
+    SET Libacc.Weather;
+RUN;
+```
+
+The second method is to use the PROC IMPORT procedure to read the data from Access database:
+```
+*Read data from Access database using PROC IMPORT;
+PROC IMPORT OUT= WORK.Electricity DATATABLE= "TorontoHydro" 
+             DBMS=ACCESS REPLACE;
+		     DATABASE="P:\Utility Data Management\Interval.accdb"; 
+		     SCANMEMO=YES;
+		     USEDATE=NO;
+		     SCANTIME=YES;
+RUN;
+```
+
+2. Using R
+
+Use the following code on a 64 bit Windows system and 32 bit R:
+
+```{r}
+library(RODBC)
+# connect the data base
+channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=P:/System/System Overhead/Utility Data Management/05_Complete Workbooks/GEA/Schools/GEASchools.accdb")
+
+# get the data
+Targetdat <- sqlFetch(channel, "Target")
+
+close(channel)
+
+# This command only works on 32 bit Windows and 32 bit R
+# Connect to Access db
+channel <- odbcConnectAccess("P:/Utility Data Management/GEASchools.accdb")
+```
+
