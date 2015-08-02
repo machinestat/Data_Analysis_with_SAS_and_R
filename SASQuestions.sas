@@ -156,25 +156,22 @@ RUN;
 /*By default Proc Means calculate the summary statistics like N, Mean, Std deviation, Minimum and maximum, Where as */
 /*Mean function compute only the mean values.*/
 
-1.  SAS stattements can be used in both DATA and PROC steps?  
+/*4.  SAS stattements can be used in both DATA and PROC steps?  */
+/* BY, WHERE, LABEL, FORMAT */
 
- BY, WHERE, LABEL, FORMAT 
+/*5.  Some procedures that support the BY statement?*/
+/*REPORT, SORT (required), COMPARE, CORR, FREQ, TABULATE, MEANS, PLOT, TRANSPOSE, PRINT, UNIVARIATE*/
 
-2.  Some procedures that support the BY statement?
+/*6.  Some of the procedures that support the WHERE statement?*/
+/*REPORT, COMPARE, SORT, CORR, FREQ, TABULATE, MEANS, PLOT, TRANSPOSE, PRINT, UNIVARIATE*/
 
-REPORT, SORT (required), COMPARE, CORR, FREQ, TABULATE, MEANS, PLOT, TRANSPOSE, PRINT, UNIVARIATE
-
-3.  Some of the procedures that support the WHERE statement?
-
-REPORT, COMPARE, SORT, CORR, FREQ, TABULATE, MEANS, PLOT, TRANSPOSE, PRINT, UNIVARIATE
-
-4. four types of variable-lists notations?
-
-*numbered range lists*: Var1 - Var3 for Var1, Var2, Var3
-
-*named range lists*: ID -- Age refers to all the variables in the order of variable creation from ID to Age.
-
-*name prefix lists*: refer to all variables that begin with a specified character string such as Score:
-
-*special SAS name list*: _NUMERIC_, _CHARACTER_, _ALL_ refer to all numeric, character and all the variables defined in the DATA step, respectively.
+/*7. four types of variable-lists notations?*/
+/**/
+/**numbered range lists*: Var1 - Var3 for Var1, Var2, Var3*/
+/**/
+/**named range lists*: ID -- Age refers to all the variables in the order of variable creation from ID to Age.*/
+/**/
+/**name prefix lists*: refer to all variables that begin with a specified character string such as Score:*/
+/**/
+/**special SAS name list*: _NUMERIC_, _CHARACTER_, _ALL_ refer to all numeric, character and all the variables defined in the DATA step, respectively.*/
 
