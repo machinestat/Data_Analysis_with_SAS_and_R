@@ -11,8 +11,7 @@
 		BY &ID &copy;
 	RUN;
 
-	PROC TRANSPOSE DATA = &data PREFIX = &var
-						  OUT = &out(DROP = _NAME_);
+	PROC TRANSPOSE DATA = &data PREFIX = &var OUT = &out(DROP = _NAME_);
 		BY &ID &copy;
 		VAR &var;
 		ID &time;
