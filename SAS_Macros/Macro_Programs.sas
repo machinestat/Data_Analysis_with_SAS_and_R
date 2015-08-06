@@ -1,3 +1,24 @@
+/*Macro that transpose data from long format to wide format*/
+%macro makewide(DATA =, /*The name of the input data set*/
+				OUT =, /*The name of the output data set*/
+				COPY =, /*A list of variables that occur repeatedly with each 
+						 observation for a subject and will be copied to the 
+						 resulting data set.*/
+				ID =, /*The name of the ID variable that identifies the subject*/
+				VAR =, /*The variable that holds the values to be transposed. */
+				TIME = time /*The variable that numerates the repeated measurements*/);
+	PROC SORT DATA = &data;
+		BY &ID &copy;
+	RUN;
+
+	PROC TRANSPOSE DATA = &data PREFIX = &var
+						  OUT = &out(DROP = _NAME_);
+		BY &ID &copy;
+		VAR &var;
+		ID &time;
+	RUN;
+%mend makewide;
+
 /*This SAS program first read all the file names in the same folder, 
 the files must be in the same type. Then read all the files and create 
 a SAS data set for each file, finally use SAS to merge all the data 
