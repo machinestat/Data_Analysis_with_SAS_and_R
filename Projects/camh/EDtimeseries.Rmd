@@ -1,0 +1,345 @@
+---
+title: "Time Series Analysis on Numbers of Patients Visiting ED"
+author: "Shu Guo"
+date: "Thursday, January 07, 2016"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    highlight: zenburn
+---
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(TSA)
+library(ggplot2)
+library(lubridate)
+library(scales)
+library(digest)
+library(gridExtra)
+library(plyr)
+```
+
+## Introduction
+
+The Centre for Addiction and Mental Health (CAMH) is Canada's largest mental health and addiction teaching hospital, as well as one of the world's leading research centres in the area of addiction and mental health. CAMH's 24/7 Psychiatric Emergency Department is located at 250 College Street. It serves 40% of the Toronto Central LHIN emergency presentations for mental health and addictions and is the largest teaching site for the Department of Psychiatry at the University of Toronto.
+
+According to CAMH, visits to the ED have increased dramatically, with 76 percent more visits in 2014 than in 2006 (2). Therefore, it is very important if we can obtain information which will help the ED to make effective staffing decisions and effective allocate other resources. This paper anlayzed daily visiting patients for last five years and 
+
+## Data Description
+
+The data set is dail records of paitents visited to the Emergency Department, starting from April 1st, 2010 to August 31st, 2015. It includes 38, 112 observations and 13 variables.
+
+## Statistical Summaries and Exploratory Data Analysis
+
+Usually statistical analysis should start with prelimilary exploratory analysis so that we could have any ideas how to conduct the analysis.
+
+### Read the Data to R 
+
+First, we create a data set for numbers of patients visiting ED per day and then analyze the data, and the first few lines of the new data set is as follow.
+
+```{r,echo=FALSE}
+# create a holidays data set
+library(XML)
+table1 <- "http://www.statutoryholidays.com/2010.php"
+table2010 <- readHTMLTable(table1, header=T, which=1,stringsAsFactors=F)
+rownums <- c(1, 3, 6, 9, 12, 13, 14, 15, 18, 19)
+colnums <- c(1, 2)
+holiday2010 <- table2010[rownums, colnums]
+names(holiday2010) <- c("holiday", "date")
+holiday2010$year <- 2010
+
+table2 <- "http://www.statutoryholidays.com/2011.php"
+table2011 <- readHTMLTable(table2, header=T, which=1,stringsAsFactors=F)
+holiday2011 <- table2011[rownums, colnums]
+names(holiday2011) <- c("holiday", "date")
+holiday2011$year <- 2011
+
+table3 <- "http://www.statutoryholidays.com/2012.php"
+table2012 <- readHTMLTable(table3, header=T, which=1,stringsAsFactors=F)
+holiday2012 <- table2012[rownums, colnums]
+names(holiday2012) <- c("holiday", "date")
+holiday2012$year <- 2012
+
+table4 <- "http://www.statutoryholidays.com/2013.php"
+table2013 <- readHTMLTable(table4, header=T, which=1,stringsAsFactors=F)
+rownums2 <- c(1,4,7,10,13,14,15,16,19,20)
+colnums2 <- c(1, 2)
+holiday2013 <- table2013[rownums2, colnums2]
+names(holiday2013) <- c("holiday", "date")
+holiday2013$year <- 2013
+
+table5 <- "http://www.statutoryholidays.com/2014.php"
+table2014 <- readHTMLTable(table5, header=T, which=1,stringsAsFactors=F)
+rownums3 <- c(1,4,7,10,14,15,16,17,20,21)
+holiday2014 <- table2014[rownums3, colnums]
+names(holiday2014) <- c("holiday", "date")
+holiday2014$year <- 2014
+
+table6 <- "http://www.statutoryholidays.com/2015.php"
+table2015 <- readHTMLTable(table6, header=T, which=1,stringsAsFactors=F)
+rownums4 <- c(1,4,8,11,15,16,17,18,21,22)
+holiday2015 <- table2015[rownums4, colnums]
+names(holiday2015) <- c("holiday", "date")
+holiday2015$year <- 2015
+
+table7 <- "http://www.statutoryholidays.com/2015.php"
+table2016 <- readHTMLTable(table7, header=T, which=1,stringsAsFactors=F)
+rownums5 <- c(1, 5, 9, 12, 16, 17, 18, 19, 22, 23)
+holiday2016 <- table2016[rownums4, colnums]
+names(holiday2016) <- c("holiday", "date")
+holiday2016$year <- 2016
+
+holidays <- rbind(holiday2010, holiday2011, holiday2012, holiday2013,
+                  holiday2014, holiday2015, holiday2016)
+
+rownames(holidays) <- 1:nrow(holidays)
+  
+holidays$datevalue <- paste(sapply(strsplit(holidays$date, split=',', 
+                            fixed=TRUE), function(x) (x[1])), 
+                            holidays$year)
+
+holidays$datevalue <- as.Date(holidays$datevalue, 
+                              format = "%B %d %Y")
+```
+
+
+```{r, echo=FALSE}
+# read the data set
+dat <- read.csv("rawData.csv", header = TRUE)
+#Total number of patients visited ED during this period
+# nrow(dat) # 38112
+
+# Number of patients visited ED more than one time:
+# nrow(dat) - length(unique(dat$MRN)) # 17690
+
+# create a new data set for numbers of daily visiting patients
+dat$RegistrationDate <- as.Date(dat$RegistrationDate,
+                                format = "%m/%d/%Y")
+dat$count <- 1
+
+#create hourly data
+dat$hours <- as.factor(hour(strptime(dat$RegistrationTime, format = "%H:%M")))
+
+df2 <- aggregate(dat[c("count")], by=list(dat$RegistrationDate), FUN=sum, na.rm=TRUE)
+names(df2) <- c("Date", "Patients")
+df2$Date <- as.Date(df2$Date, format = "%m/%d/%Y")
+df2$Year = factor(format(df2$Date,'%Y'))
+df2$Month<- strftime(df2$Date,"%m")
+df2$Weekday <- weekdays(df2$Date)
+df2$Weekday <- factor(df2$Weekday,
+                      levels = c("Monday", "Tuesday", "Wednesday",
+                        "Thursday", "Friday", "Saturday", "Sunday"))
+df2$Weekends <- ifelse(df2$Weekday == "Saturday" | df2$Weekday == "Sunday",
+                       1, 0)
+# include holdiays and weekends
+df2$holidays <- as.numeric(is.element(df2$Date, holidays$datevalue))
+for (i in 1:nrow(df2)) {
+    if ((df2$Weekends[i] == 1) | (df2$holidays[i] == 1)) { 
+        df2$WeekendHolidays[i] <- 1}
+    else df2$WeekendHolidays[i] <- 0
+}
+# display the first 8 rows of the data set
+knitr::kable(head(df2), format = "latex",
+             caption = "First 8 rows in the data set")
+
+```
+
+### Yearly Trend 
+
+The data set shows an increasing trend of numbers of patients by year, so we would expect more patients come to the ED in the future years.  
+
+```{r,echo=FALSE}
+
+
+tmp <- as.data.frame(as.list(aggregate(df2$Patients, 
+            by = list(df2$Year), 
+            FUN = function(x) c( Avg = mean(x), Count = sum(x)))))
+tmp$x.Avg <- round(tmp$x.Avg, 2)
+tmp$x.Count <- round(tmp$x.Count)
+names(tmp) <- c("year", "Average Number of Patients/day", "Total Numbers of Patients")
+knitr::kable(tmp, format = "latex",
+             caption = "Number of Patients by Year")
+```
+
+```{r,echo=FALSE}
+tmp2 <- tmp
+names(tmp2) <- c("Year", "AvgNums")
+ggplot(tmp2, aes(x = Year, y = AvgNums)) + 
+    geom_bar(stat = "identity", fill = "lightblue", color = "black") +
+    labs(y = "Average Number of Patients") + 
+    ggtitle("Figure1: Average Number of Patients by Year") +
+    theme_bw()
+
+```
+
+### Weekday Effects
+
+If we summary number of patients by weekday, we can easily see that a decreasing trend starting from Monday. So the most of the patients come to the ED during weekdays and they less likely to come on weekends.
+
+```{r,echo=FALSE}
+weekdays <- ddply(df2, "Weekday", function(x) {
+    Average <- round(mean(x$Patients), 2)
+    Total <- sum(x$Patients)
+    Percent <- round(Total/sum(df2$Patients), 2)
+    data.frame(Average, Total, Percent)
+})
+
+knitr::kable(weekdays, format = "latex",
+             caption = "Summary of Number of Patients by Weekdays")
+```
+
+```{r,echo=FALSE}
+# Create a boxplot by weekdays
+ggplot(df2, aes(x = Weekday, y = Patients, fill = Weekday)) + 
+    geom_boxplot() + xlab("") + theme_bw() + 
+    ylab("Number of Patients") + guides(fill=FALSE) + 
+    stat_summary(fun.y = mean, geom="point", shape=5, size=4)
+
+```
+
+### Hourly Data
+
+```{r,echo=FALSE}
+#Total hourly table
+hourlyTotal <- ddply(dat, "hours", function(x) {
+    Total <- sum(x$count)
+    Avg <- round(sum(x$count)/nrow(df2), 2)
+    Percent <- round(Total/nrow(dat)*100, 2)
+    data.frame(Total, Avg, Percent)
+})
+
+dat$Weekday <- weekdays(dat$RegistrationDate)
+dat$Weekday <- factor(dat$Weekday,
+                      levels = c("Monday", "Tuesday", "Wednesday",
+                        "Thursday", "Friday", "Saturday", "Sunday"))
+dat$Weekends <- ifelse(dat$Weekday == "Saturday" | dat$Weekday == "Sunday",
+                       1, 0)
+# include holdiays and weekends
+dat$holidays <- is.element(dat$RegistrationDate, holidays$datevalue)
+for (i in 1:nrow(dat)) {
+    if ((dat$Weekends[i] == 1) | (dat$holidays[i] == 1)) { 
+        dat$WeekendHolidays[i] <- 1}
+    else dat$WeekendHolidays[i] <- 0
+}
+# hourly paitents table by weekdays
+weekdaysDat <- subset(dat, WeekendHolidays == 0)
+weekdays <- length(unique(weekdaysDat$RegistrationDate))
+hourlyWeekdays <- ddply(weekdaysDat, "hours", function(x) {
+    Total <- sum(x$count)
+    Avg <- round(sum(x$count)/weekdays, 2)
+    Percent <- round(Total/nrow(weekdaysDat)*100, 2)
+    data.frame(Total, Avg, Percent)
+})
+
+# hourly paitents table by weekends and holidays
+wkendholidays <- subset(dat, WeekendHolidays == 1)
+weekends <- length(unique(wkendholidays$RegistrationDate))
+hourlywkedholidys <- ddply(wkendholidays, "hours", function(x) {
+    Total <- sum(x$count)
+    Avg <- round(sum(x$count)/weekends, 2)
+    Percent <- round(Total/nrow(wkendholidays)*100, 2)
+    data.frame(Total, Avg, Percent)
+})
+
+
+knitr::kable(hourlyTotal, format = "latex",
+             caption = "Number of Patients by Hours")
+
+knitr::kable(hourlyWeekdays, format = "latex",
+             caption = "Number of Patients by Hours During Weekdays")
+
+knitr::kable(hourlywkedholidys, format = "latex",
+             caption = "Number of Patients by Hours During Weekends and Holidays")
+
+```
+
+
+## Time Series Analysis
+
+```{r, echo=FALSE}
+# create the function quickTSPlots
+quickTSPlots <- function(TS, ylab = "", ylim = c(-1, 1), nlag = 30,
+                         TSP = FALSE, tk = 10, ...){
+  require("ggplot2")
+  require("gridExtra")
+  TS.df <- data.frame(time = 1:length(TS), value = TS)
+  timeSeriesPlot <- ggplot(TS.df, aes(x = time, y = value)) + geom_line()
+  TS.acf <- acf(TS, plot = FALSE, lag.max = nlag)
+  TS.pacf <- pacf(TS, plot = FALSE, lag.max = nlag)
+  ci <- 0.95
+  clim0 <- qnorm((1 + ci)/2)/sqrt(TS.acf$n.used)
+  clim <- c(-clim0, clim0)
+  
+  hline.data <- data.frame(z = c(0, clim), type = c("base", "ci", "ci"))
+  
+  acfPlot <- ggplot(data.frame(lag = TS.acf$lag, acf = TS.acf$acf)) +
+    geom_hline(aes(yintercept = z, colour = type, linetype = type),
+               hline.data) +
+    geom_linerange(aes(x = lag, ymin = 0, ymax = acf)) +
+    scale_colour_manual(values = c("black", "red")) +
+    scale_linetype_manual(values = c("solid", "dashed")) +
+    scale_x_continuous(breaks = seq(0, nlag, tk)) +
+    ggtitle("AutoCorrelations") +
+    theme(legend.position="none")
+  
+  pacfPlot <- ggplot(data.frame(lag = TS.pacf$lag, pacf = TS.pacf$acf)) +
+    geom_hline(aes(yintercept = z, colour = type, linetype = type),
+               hline.data) +
+    geom_linerange(aes(x = lag, ymin = 0, ymax = pacf)) +
+    scale_colour_manual(values = c("black", "red")) +
+    scale_linetype_manual(values = c("solid", "dashed")) +
+    scale_x_continuous(breaks = seq(0, nlag, tk)) +
+    ggtitle("Partial AutoCorrelation") +
+    theme(legend.position="none")
+  
+  if (TSP) {
+    grid.arrange(timeSeriesPlot, arrangeGrob(acfPlot, pacfPlot,
+                                             ncol = 2), ncol = 1)
+  } else {
+    grid.arrange(acfPlot, pacfPlot, ncol = 2)
+  }
+}
+```
+
+```{r, echo=FALSE}
+#df2$CenterPatients <- scale(df2$Patients, center = TRUE, scale = FALSE)
+
+df2$Wkdays <- factor(df2$Weekday,
+                      levels = c("Sunday", "Monday", "Tuesday", 
+                                 "Wednesday", "Thursday", "Friday", 
+                                 "Saturday"))
+Wkdays <- as.data.frame(model.matrix(~ df2$Wkdays - 1)) # create indicators for weekday
+names(Wkdays) <- c("Sunday", "Monday", "Tuesday", 
+                  "Wednesday", "Thursday", "Friday", 
+                  "Saturday")
+Wkdays <- Wkdays[, c(2:7)]
+
+yfac <- as.data.frame(model.matrix(~ df2$Year - 1))
+yfac <- yfac[, -1]
+names(yfac) <- c("Year2011", "Year2012", "Year2013", 
+                 "Year2014", "Year2015")
+
+#wkh <- as.data.frame(as.factor(df2$WeekendHolidays))
+
+
+
+datframe <- cbind(Wkdays, yfac)
+
+fitModel <- arimax(df2$Patients, c(1, 1, 1), xreg = datframe)
+x <- cbind(as.data.frame(fitModel$coef), sqrt(diag(fitModel$var.coef)))
+x <- cbind(x, x[, 1]/x[, 2], 
+            2 * (1 - pt(abs(x[, 1]/x[, 2]), nrow(df2))))
+names(x) <- c("Coef", "Sterr", "t", "p-value")
+
+knitr::kable(x, format = "latex",
+             caption = "Summary of Time Series Model")
+
+quickTSPlots(fitModel$residuals, nlag = 40, TSP = FALSE)
+
+```
+
+## References:
+(1) http://www.camh.ca/en/hospital/about_camh/who_we_are/Pages/who_we_are.aspx
+
+
