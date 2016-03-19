@@ -29,62 +29,64 @@ then create a summary data set.*/
 
 /*This SAS macro program reads all the file names in the same folder, 
 the files must be the same type*/
-%macro GetFiles(Folder, Ext);
-	FILENAME DIRLIST PIPE %sysfunc(quote(dir "&Folder\*.&Ext"));    
-    /*Use the PIPE engine in the FILENAME statement to access the 
-    directory information. */
-	DATA dirlist ;                                               
-		INFILE dirlist LRECL = 200 TRUNCOVER;                          
-		INPUT  line $200.; 
+%macro GetFiles(folder, /*The path for the data set folder*/
+				ext, /*extention of data files*/
+				rdbms=excelcs, /*dbms for different data files*/
+				exlrange=Sheet1$ /*choose excel sheet to import*/);
+	/*Use the PIPE engine in the FILENAME statement to access the directory information. */
+	filename dirlist pipe %sysfunc(quote(dir "&Folder\*.&ext")); 
+	data dirlist ;                                               
+		infile dirlist LRECL = 200 TRUNCOVER;                          
+		input line $200.; /*read the data file names  and path to the data set*/
 		length file_name $ 200; 
-		file_name="&Folder\"||scan(line,-1," ");  
-	 	IF SCAN(line, -1, ".") NOT IN ("&Ext") THEN DELETE;
-		KEEP file_name;
-	RUN; 
-%mend GetFiles;
-/*example: %GetFiles(C:\Data\Green Energy Act\2015\Target Finder, xlsx) */
+		file_name="&Folder\"||scan(line,-1," "); /*subtract data file names from the line variable*/ 
+	 	if scan(line, -1, ".") not in ("&ext") then delete;
+		keep file_name;
+	run; 
 
-/*create macro variables for SAS to read the files */
-DATA Files;
-	SET Dirlist END = End_Var;
-	FileNum = 'file'||LEFT(_N_);
-	IF End_Var THEN CALL SYMPUT('MAX', _N_);
-	CALL SYMPUT(FileNum, File_Name);
-RUN;
+	data files;
+		set dirlist end = End_Var;
+		FileNum = 'file'||left(_N_);
+		if End_Var then call symput('max', _N_);
+		call symput(FileNum, File_Name);
+	run;
 
-/* read all the raw data files to SAS */
-%macro ReadIn;
-%DO i = 1 %TO &MAX;
-	PROC IMPORT  OUT= file&i 
-	             		DATAFILE= "&&file&i" 
-	             		DBMS=EXCEL REPLACE;
-		RANGE="Summary$"; 
-		GETNAMES=YES;
-		MIXED=NO;
-		SCANTEXT=YES;
-		USEDATE=YES;
-		SCANTIME=YES;
-				 
-	RUN;
-%END;
-%mend ReadIn;
-%ReadIn
+	%if &ext = csv %then %do; /*import csv files*/
+		%do i = 1 %to &max;
+			proc import out = file&i 
+				             datafile = "&&file&i" 
+				             dbms=&rdbms replace;
+						getnames = yes;
+						datarow = 2;
+			run;
+		%end;
+	%end;
+	%else %if &ext in (xls xlsx) %then %do; /*import excel files*/
+		%do i = 1 %to &max;
+			proc import data = file&i
+							datafile = "&&file&i"
+							dbms = &rdbms replace;
+				range="&exlrange"; 
+			run;
+		%end;
+	%end;
 
-/*merge all the SAS data sets */
-DATA Total;
+	/*merge all the SAS data sets */
+	DATA Total;
 		/*first we need to take care of the same variables that 
 		has different length in each data set*/
-		LENGTH School_Board $80.;
-		FORMAT School_Board $80.;
-		INFORMAT School_Board $80.;
-		SET file1 - file%left(&MAX);
-RUN;
+		set file1 - file%left(&max);
+	RUN;
 
-/*Finally, delete all the data sets we don't need.*/
-PROC DATASETS LIBRARY = work NOLIST;
-	DELETE file1 - file%left(&MAX) Dirlist Files;
-RUN;
-QUIT;
+	/*Finally, delete all the data sets we don't need.*/
+	proc datasets library = work nolist;
+		delete file1 - file%left(&max) Dirlist Files;
+	run;
+	quit;
+%mend GetFiles;
+
+/*%GetFiles(C:\Data\Hospitals, csv, rdbms=tab)*/
+/*%GetFiles(C:\Temp, xls, rdbms = excelcs)*/
 
 
 *--------------------------------------------------------------*
